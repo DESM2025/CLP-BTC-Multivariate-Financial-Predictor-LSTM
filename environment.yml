@@ -3,12 +3,14 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.9
+  - python=3.10               
   - pandas
   - numpy
   - matplotlib
   - scikit-learn
+  - cffi                      
   - pip
   - pip:
-    - yfinance
-    - tensorflow
+    - yfinance                
+    - tensorflow              
+    - curl_cffi               
