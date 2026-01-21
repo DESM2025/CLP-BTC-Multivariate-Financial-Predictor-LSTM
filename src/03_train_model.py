@@ -1,0 +1,73 @@
+import numpy as np
+import pandas as pd
+import os
+import tensorflow as tf
+import joblib
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.callbacks import ModelCheckpoint
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_PATH = os.path.join(BASE_DIR, '..', 'data', 'bitcoin_data.csv')
+MODEL_DIR = os.path.join(BASE_DIR, '..', 'models')
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+def train_model():
+    df = pd.read_csv(DATA_PATH, index_col=0, parse_dates=True)
+    data = df.values
+
+    scaler = MinMaxScaler(feature_range=(0,1))
+    scaled_data = scaler.fit_transform(data)
+    scaler_path = os.path.join(MODEL_DIR, 'scaler.gz')
+    joblib.dump(scaler, scaler_path)
+    
+    #ventanas
+    PD = 100 #dias
+    x_train = []
+    y_train = []
+
+    for i in range(PD, len(scaled_data)):
+        x_train.append(scaled_data[i-PD:i, 0])
+        y_train.append(scaled_data[i, 0])
+
+    x_train, y_train = np.array(x_train), np.array(y_train)
+    x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+
+    #LSTM 3
+    model = Sequential()
+    #capa 1
+    model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], 1))) #50 neuronas, sigueinte capa recurente= true
+    
+    model.add(Dropout(0.2)) #dropout 20%
+
+    #capa 2
+    model.add(LSTM(units=50, return_sequences=False)) #ultima capa recurente=false
+    model.add(Dropout(0.2))
+
+    #capa 3 densa
+    model.add(Dense(units=1)) #1 precio
+
+    #compilar/optimizador y loss/guardar mejor modelo
+    model.compile(optimizer='adam', loss='mean_squared_error')
+    best_model_path = os.path.join(MODEL_DIR, 'bitcoin_lstm.h5')
+    checkpoint = ModelCheckpoint(
+        filepath=best_model_path,
+        monitor='val_loss',
+        verbose=1,
+        save_best_only=True,
+        mode='min'
+    )
+    print("entrenando modelo")
+
+    #30 epocas en batch de 31 dias, activar checkpoint
+    model.fit(x_train, y_train, epochs=30, batch_size=31,validation_split=0.1,callbacks=[checkpoint])
+
+    #guardar ultimo modelo
+    final_model_path = os.path.join(MODEL_DIR, 'bitcoin_lstm_final.h5')
+    model.save(final_model_path)
+    print(f"el modelo final se guardo en {{final_model_path}}")
+    print(f"el mejor modelo se guardo en {{best_model_path}}")
+
+if __name__ == "__main__":
+    train_model()
