@@ -1,0 +1,15 @@
+# Ignorar carpetas de entornos y caché
+env/
+venv/
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+
+# Ignorar datos (son pesados y se pueden descargar)
+data/
+
+# Ignorar configuraciones de VS Code
+.vscode/
+
+# Ignorar modelos entrenados pesados
+*.h5
