@@ -39,7 +39,7 @@ def train_model():
     #LSTM 3 capas
     model = Sequential()
     #capa 1
-    model.add(LSTM(units=45, return_sequences=True, input_shape=(x_train.shape[1], 1))) #45 neuronas en ese caso al ser clp, sigueinte capa recurente= true
+    model.add(LSTM(units=45, return_sequences=True, input_shape=(x_train.shape[1], 1))) #45 neuronas en este caso al ser clp, sigueinte capa recurente= true
     
     model.add(Dropout(0.25)) #dropout 25%
 
