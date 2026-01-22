@@ -6,6 +6,7 @@ import joblib
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.optimizers import Adam
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
@@ -39,18 +40,20 @@ def train_model():
     #LSTM 3 capas
     model = Sequential()
     #capa 1
-    model.add(LSTM(units=45, return_sequences=True, input_shape=(x_train.shape[1], 1))) #45 neuronas en este caso al ser clp, sigueinte capa recurente= true
+    model.add(LSTM(units=70, return_sequences=True, input_shape=(x_train.shape[1], 1))) # neuronas en este caso al ser clp, sigueinte capa recurente= true
     
-    model.add(Dropout(0.25)) #dropout 25%
+    model.add(Dropout(0.4)) #dropout, aqui sirvio un dropout mayor que el del bitcoin
 
     #capa 2
-    model.add(LSTM(units=45, return_sequences=False)) #ultima capa recurente=false
-    model.add(Dropout(0.25))
+    model.add(LSTM(units=60, return_sequences=False)) #ultima capa recurente=false
+    model.add(Dropout(0.4))
 
     #capa 3 densa
+    model.add(Dense(units=16, activation='relu'))
     model.add(Dense(units=1)) #1 precio
 
     #compilar/optimizador y loss/checkpoint mejor modelo y metrica mae
+    #opt = Adam(learning_rate=0.0008)
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])  #model.compile(optimizer='adam', loss='mean_squared_error')
     best_model_path = os.path.join(MODEL_DIR, 'clp_lstm.h5')
     checkpoint = ModelCheckpoint(
@@ -65,14 +68,14 @@ def train_model():
     #early stoping
     early_stopping = EarlyStopping(
     monitor='val_loss',
-    patience=10,        # espera 10 epocas
+    patience=11,        # espera n epocas
     restore_best_weights=True
     )
     
-    #guardar entrenamiento en history/0 epocas en batch de 31 dias, activar checkpoint
-    history = model.fit(x_train, y_train, epochs=100, batch_size=90, validation_split=0.1, callbacks=[checkpoint, early_stopping] )
-    #model.fit(x_train, y_train, epochs=200, batch_size=31,validation_split=0.1,callbacks=[checkpoint])
-
+    #guardar entrenamiento en history/0 epocas en batch de n , activar checkpoint
+    history = model.fit(x_train, y_train, epochs=100, batch_size=30, validation_split=0.1, callbacks=[checkpoint, early_stopping] )
+    #model.fit(x_train, y_train, epochs=200, batch_size=31,validation_split=0.1,callbacks=[checkpoint], shuffle=False)
+    #bajar el batch a 31 dio mejor resultado 
     #guardar ultimo modelo
     final_model_path = os.path.join(MODEL_DIR, 'clp_lstm_final.h5')
     model.save(final_model_path)
