@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+import random
 import os
 import tensorflow as tf
 import joblib
@@ -8,6 +10,14 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+os.environ['PYTHONHASHSEED'] = str(SEED)          
+os.environ['TF_DETERMINISTIC_OPS'] = '1'          
+os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, '..', 'data', 'bitcoin_data.csv')
@@ -36,7 +46,7 @@ def train_model():
         y_train.append(scaled_data[i:i+PCD, 0]) #targer PCD dias
 
     x_train, y_train = np.array(x_train), np.array(y_train)
-    #reshape [Muestras(samples), Pasos de Tiempo(timestep dias), Features(1 Close)]
+    #reshape [Muestras(samples), Pasos de Tiempo(timestep dias), features (1 Close)]
     x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 
     #LSTM 
@@ -71,7 +81,7 @@ def train_model():
     restore_best_weights=True
     )
     
-    #guardar entrenamiento en history/epocas/batch y activar checkpoint
+    #guardar entrenamiento en history/epocas/batch y activar checkpoint/validation split 10% datos para validacion
     history = model.fit(x_train, y_train, epochs=150, batch_size=90, validation_split=0.1, callbacks=[checkpoint, early_stopping] )
     #model.fit(x_train, y_train, epochs=200, batch_size=31,validation_split=0.1,callbacks=[checkpoint])
 

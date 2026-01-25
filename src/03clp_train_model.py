@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+import random
 import os
 import tensorflow as tf
 import joblib
@@ -9,6 +11,14 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+os.environ['PYTHONHASHSEED'] = str(SEED)          
+os.environ['TF_DETERMINISTIC_OPS'] = '1'          
+os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, '..', 'data', 'clp_data.csv')
@@ -24,7 +34,7 @@ def train_model():
     scaler_path = os.path.join(MODEL_DIR, 'scaler_clp.gz')
     joblib.dump(scaler, scaler_path)
     
-    #ventana, funciono mejor una ventana mas chica
+    #ventana, funciono mejor una ventana mas chica en comparacion al bitcoin
     PD = 14
     #dias a predecir
     PDC = 2
@@ -43,17 +53,16 @@ def train_model():
     #LSTM 
     model = Sequential()
     #capa 1
-    model.add(LSTM(units=70, return_sequences=True, input_shape=(x_train.shape[1], 1))) # naumente neuronas, sigueinte capa recurente= true
-    
+    model.add(LSTM(units=70, return_sequences=True, input_shape=(x_train.shape[1], 1))) # aumente neuronas para mas capacidad
     model.add(Dropout(0.35)) #dropout, aqui sirvio un dropout mayor que el del bitcoin
 
     #capa 2
-    model.add(LSTM(units=60, return_sequences=False)) #ultima capa recurente=false
+    model.add(LSTM(units=60, return_sequences=False)) #tambien se aumento aqui 
     model.add(Dropout(0.35))
 
     #capa 3 densa
-    model.add(Dense(units=16, activation='relu')) #uso de relu por que dio mejor resutlado
-    model.add(Dense(units=PDC)) #precio
+    model.add(Dense(units=16, activation='relu')) #uso de relu por que dio mejor resutlado, implementacion de neurona densa por la inestabilidad del peso chileno
+    model.add(Dense(units=PDC)) 
 
     #compilar/optimizador y loss/checkpoint mejor modelo y metrica mae
     #opt = Adam(learning_rate=0.0008)
@@ -74,7 +83,7 @@ def train_model():
     restore_best_weights=True
     )
     
-    #guardar entrenamiento en history/epocas/ baje batch para mejor resultado batch, activar checkpoint
+    #guardar entrenamiento en history/epocas/ baje batch para mejor resultado batch, activar checkpoint/validation split 10% datos para validacion
     history = model.fit(x_train, y_train, epochs=100, batch_size=30, validation_split=0.1, callbacks=[checkpoint, early_stopping] )
     #model.fit(x_train, y_train, epochs=200, batch_size=31,validation_split=0.1,callbacks=[checkpoint], shuffle=False)
     
